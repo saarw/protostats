@@ -1,17 +1,22 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"strconv"
 )
 
-type RpcApi struct {}
+type RpcApi struct {
+	tokenCount int
+	}
 
-type TestRunDto struct {
-	Token string	
+func (r *RpcApi) InitTests(networkAndPhoneData string) string {
+	token := strconv.Itoa(r.tokenCount)
+	r.tokenCount = r.tokenCount + 1	
+	log.Printf("InitTests called with data %s, return token %s", networkAndPhoneData, token)
+	return token
 }
 
-func (r *RpcApi) InitTests(in string) TestRunDto {
-	fmt.Printf("InitTests called %s\n", in)
-	return TestRunDto{Token:strconv.Itoa(1234)}
+func (r *RpcApi) RpcScenarioCall(token string) string {
+	log.Printf("RpcScenarioCall called with token %s", token)
+	return "Some data, lorem ipsum, random chars gsdfsfarqwadg78se7df89sdyfhgoaidf0ad9fuad0f ua0w, end an end"
 }

@@ -28,12 +28,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ScenarioRunner {
 
+    private final String endpointUrl;
     private AtomicInteger requestId = new AtomicInteger();
     private ConcurrentLinkedQueue<ScenarioLogic> scenarioQueue;
 
     public ScenarioRunner(Scenarios scenarios) {
         scenarioQueue = new ConcurrentLinkedQueue<ScenarioLogic>();
         scenarioQueue.add(new JsonRpcScenario());
+        endpointUrl = "http://10.0.2.2:8080/rpc";
     }
 
     public void runScenarios(final TelephonyManager telephonyManager, final NetworkInfo networkInfo) {
@@ -48,7 +50,7 @@ public class ScenarioRunner {
                 HttpPost httpPost = new HttpPost();
 
                 try {
-                    String token = sendPost("http://10.0.2.2:8080/rpc", "InitTests", operatorName);
+                    String token = sendPost(endpointUrl, "InitTests", operatorName);
                     while (!scenarioQueue.isEmpty()) {
                         scenarioQueue.poll().run(token);
                     }
@@ -89,14 +91,16 @@ public class ScenarioRunner {
     }
 
     interface ScenarioLogic {
-        public void run(String token);
+        public void run(String token) throws Exception;
     }
 
     class JsonRpcScenario implements ScenarioLogic {
 
         @Override
-        public void run(String token) {
-
+        public void run(String token) throws Exception {
+            for (int i = 0; i < 5; i++) {
+                sendPost(endpointUrl, "rpcScenarioCall", token);
+            }
         }
     }
 }
