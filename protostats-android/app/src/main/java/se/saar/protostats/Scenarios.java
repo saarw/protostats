@@ -1,24 +1,32 @@
 package se.saar.protostats;
 
+import android.os.RecoverySystem;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by william on 2014-12-29.
  */
 public class Scenarios {
     private Map<String, String[]> categoriesToScenarios;
-    private Map<String, Scenario> nameToScenarioDescriptors;
+    private Map<ScenarioID, RunnableScenario> runnableScenarios;
     private String[] categories;
 
     public Scenarios() {
         categoriesToScenarios = new LinkedHashMap<String, String[]>();
-        categoriesToScenarios.put("Init Test", new String[] {"HTTP - Init test RPC call"});
-        categoriesToScenarios.put("HTTP/HTTPS request/response",
-                new String[] {"HTTP Post JSON-RPC", "HTTPS Post JSON-RPC"});
-        categoriesToScenarios.put("HTTP/HTTPS long-polling",
-                new String[] {"HTTP Post long-polling", "HTTPS Post long-polling"});
+        categoriesToScenarios.put(ScenarioID.HTTP_POST_JSON_RPC.category,
+                new String[] {ScenarioID.HTTP_POST_JSON_RPC.title, "HTTP long-polling"});
+        categoriesToScenarios.put("HTTPS scenarios",
+                new String[] {"HTTPS POST JSON-RPC", "HTTPS long-polling"});
+        categoriesToScenarios.put("Socket scenarios",
+                new String[] {"Socket send RPCs", "Socket subscribe-receive broadcasts"});
+        categoriesToScenarios.put("Websocket scenarios",
+                new String[] {"Websocket RPCs", "Websocket subscribe-receive broadcasts"});
         categories = categoriesToScenarios.keySet().toArray(new String[categoriesToScenarios.size()]);
+        runnableScenarios = new ConcurrentHashMap<ScenarioID, RunnableScenario>();
+        runnableScenarios.put(ScenarioID.HTTP_POST_JSON_RPC, new JsonRpcScenario());
     }
 
 
@@ -31,7 +39,40 @@ public class Scenarios {
         return scenarios == null ? new String[0] : scenarios;
     }
 
-    public Scenario getScenarioInfo(String scenarioName) {
-        return nameToScenarioDescriptors.get(scenarioName);
+    public int getProgress(int categoryIdx, String scenarioTitle) {
+        for (Map.Entry<ScenarioID, RunnableScenario> entry : runnableScenarios.entrySet()) {
+            if (entry.getKey().title.equals(scenarioTitle)) {
+                return entry.getValue().getProgress();
+            }
+        }
+        return 0;
+    }
+
+    public RunnableScenario getRunnableScenario(ScenarioID scenarioId) {
+        return runnableScenarios.get(scenarioId);
+    }
+
+    static class JsonRpcScenario extends RunnableScenario {
+
+        public JsonRpcScenario() {
+            super(ScenarioID.HTTP_POST_JSON_RPC, new JsonRpcScenarioLogic());
+        }
+
+        static class JsonRpcScenarioLogic implements ScenarioLogic {
+            @Override
+            public void run(String token, ScenarioRunner context, RecoverySystem.ProgressListener progressListener) throws Exception {
+                int reqs = 5;
+                for (int i = 0; i < reqs; i++) {
+                    if (i > 0) {
+                        Thread.sleep(5000);
+                    }
+                    String result = context.sendPost("http://10.0.2.2:8080/rpc", "RpcScenarioCall", token);
+                    if (result == null || result.length() < 10 || !result.endsWith("end an end")) {
+                        throw new Exception("Returned unexpected result: " + result);
+                    }
+                    progressListener.onProgress((i + 1) * (100 / reqs));
+                }
+            }
+        }
     }
 }

@@ -56,6 +56,7 @@ func (rpc *JsonRpcEndpoint) Handler(out http.ResponseWriter, in *http.Request) {
 						returnJson, err := json.Marshal(rpcRsp)
 						if err == nil {
 							out.WriteHeader(http.StatusOK)
+					
 							out.Write(returnJson)
 							return
 						}
