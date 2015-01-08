@@ -16,24 +16,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class ProtoStatsActivity extends Activity {
@@ -48,9 +38,6 @@ public class ProtoStatsActivity extends Activity {
                     .commit();
         }
     }
-
-
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -87,116 +74,43 @@ public class ProtoStatsActivity extends Activity {
         @Override
         public View onCreateView(final LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_start, container, false);
+            final View rootView = inflater.inflate(R.layout.fragment_start, container, false);
 
             // System.out.println(view);
-            final ExpandableListView scenariosListView = (ExpandableListView) rootView.findViewById(R.id.testScenarioListView);
+            final ExpandableListView scenariosListView = (ExpandableListView) rootView.findViewById(R.id.scenarioListView);
             TextView testScenariosHeader = new TextView(getActivity());
             testScenariosHeader.setText("Connectivity Scenarios");
             scenariosListView.addHeaderView(testScenariosHeader);
 
             // scenariosListView.setGroupIndicator(null);
             scenariosListView.setChildIndicator(null);
-            scenariosListView.setAdapter(new BaseExpandableListAdapter() {
-
-                @Override
-                public int getGroupCount() {
-                    return scenarios.getCategories().length;
-                }
-
-                @Override
-                public int getChildrenCount(int groupPosition) {
-                    return scenarios.getScenariosForCategoryIdx(groupPosition).length;
-                }
-
-                @Override
-                public Object getGroup(int groupPosition) {
-                    return scenarios.getCategories()[groupPosition];
-                }
-
-                @Override
-                public Object getChild(int groupPosition, int childPosition) {
-                    return scenarios.getScenariosForCategoryIdx(groupPosition)[childPosition];
-                }
-
-                @Override
-                public long getGroupId(int groupPosition) {
-                    return groupPosition + 1 << 32;
-                }
-
-                @Override
-                public long getChildId(int groupPosition, int childPosition) {
-                    return groupPosition << 16 | childPosition; // Allows for 16k groups and children
-                }
-
-                @Override
-                public boolean hasStableIds() {
-                    return false;
-                }
-
-                @Override
-                public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
-                    View itemView = null;
-                    TextView labelView = null;
-                    View progressView;
-                    if ((itemView = convertView) == null ||
-                            (labelView = (TextView) convertView.findViewById(R.id.scenarioLabel)) == null ||
-                            (progressView = itemView.findViewById(R.id.scenarioProgress)) == null) {
-                        itemView = inflater.inflate(R.layout.scenario_list_item, parent, false);
-                        labelView = (TextView) itemView.findViewById(R.id.scenarioLabel);
-                        progressView = itemView.findViewById(R.id.scenarioProgress);
-                    }
-                    labelView.setText(scenarios.getCategories()[groupPosition]);
-                    labelView.setTypeface(null, Typeface.BOLD);
-                    progressView.setVisibility(View.INVISIBLE);
-                    return itemView;
-                }
-
-                @Override
-                public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-                    View itemView = null;
-                    TextView labelView = null;
-                    ProgressBar progressView = null;
-                    if ((itemView = convertView) == null ||
-                         (labelView = (TextView) convertView.findViewById(R.id.scenarioLabel)) == null ||
-                         (progressView = (ProgressBar) itemView.findViewById(R.id.scenarioProgress)) == null) {
-                        itemView = inflater.inflate(R.layout.scenario_list_item, parent, false);
-                        labelView = (TextView) itemView.findViewById(R.id.scenarioLabel);
-                        progressView = (ProgressBar) itemView.findViewById(R.id.scenarioProgress);
-                    }
-                    labelView.setText(scenarios.getScenariosForCategoryIdx(groupPosition)[childPosition]);
-                    int progress = scenarios.getProgress(groupPosition,
-                            scenarios.getScenariosForCategoryIdx(groupPosition)[childPosition]);
-                    if (progress == 0) {
-                        progressView.setVisibility(View.INVISIBLE);
-                    } else {
-                        progressView.setVisibility(View.VISIBLE);
-                        progressView.setProgress(progress);
-                    }
-                    return itemView;
-                }
-
-                @Override
-                public boolean isChildSelectable(int groupPosition, int childPosition) {
-                    return false;
-                }
-            });
+            scenariosListView.setAdapter(new ScenarioExpandableListAdapter(inflater, scenarios));
             for (int i = 0; i < scenarios.getCategories().length; i++) {
                  scenariosListView.expandGroup(i);
             }
 
-            Button runTestsButton = (Button) rootView.findViewById(R.id.runTestButton);
+            Button runTestsButton = (Button) rootView.findViewById(R.id.runScenariosButton);
             runTestsButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    runScenariosClicked(scenariosListView);
+                    runScenariosClicked(rootView);
                 }
             });
 
             return rootView;
         }
 
-        private void runScenariosClicked(final ExpandableListView progressView) {
+        private void toggleRunningState(View rootView, ScenarioRunner runner, boolean isStart) {
+            Button runTestsButton = (Button) rootView.findViewById(R.id.runScenariosButton);
+            ProgressBar totalRunProgress = (ProgressBar) rootView.findViewById(R.id.totalRunProgressBar);
+            runTestsButton.setEnabled(!isStart);
+            totalRunProgress.setVisibility(isStart ? View.VISIBLE : View.INVISIBLE);
+            if (isStart) {
+                startProgressUpdater(runner, rootView);
+            }
+        }
+
+        private void runScenariosClicked(final View rootView) {
             TelephonyManager telephonyManager = (TelephonyManager) getActivity().
                     getSystemService(Context.TELEPHONY_SERVICE);
             ConnectivityManager connectivityManager = (ConnectivityManager) getActivity().
@@ -210,15 +124,19 @@ public class ProtoStatsActivity extends Activity {
                 public void onClick(DialogInterface dialog, int which) {
                     TelephonyManager telephonyManager = (TelephonyManager) getActivity().
                             getSystemService(Context.TELEPHONY_SERVICE);
-                    ScenarioRunner runner = new ScenarioRunner(scenarios);
+                    ScenarioRunner runner = new ScenarioRunner(scenarios, new HashSet<Integer>());
                     runner.runScenarios(telephonyManager, activeNetwork);
-                    startProgressUpdater(runner, progressView);
+                    toggleRunningState(rootView, runner, true);
                 }
             }, true);
         }
 
-        private void startProgressUpdater(final ScenarioRunner runner, final ExpandableListView progressView) {
+        private void startProgressUpdater(
+                final ScenarioRunner runner,
+                final View rootView) {
+            final ExpandableListView scenarioListView = (ExpandableListView) rootView.findViewById(R.id.scenarioListView);
             AsyncTask<Object, Object, Object> task = new AsyncTask<Object, Object, Object>() {
+                private volatile boolean isLastPublish;
                 @Override
                 protected Object doInBackground(Object... params) {
                     try {
@@ -226,16 +144,22 @@ public class ProtoStatsActivity extends Activity {
                             publishProgress();
                             Thread.sleep(100);
                         }
-                        publishProgress();
+
                     } catch (InterruptedException e) {
                         e.printStackTrace();
+                    } finally {
+                        isLastPublish = true;
+                        publishProgress();
                     }
                     return null;
                 }
 
                 @Override
                 protected void onProgressUpdate(Object... values) {
-                    progressView.invalidateViews();
+                    if (isLastPublish) {
+                        toggleRunningState(rootView, runner, false);
+                    }
+                    scenarioListView.invalidateViews();
                     super.onProgressUpdate(values);
                 }
             };
@@ -278,6 +202,99 @@ public class ProtoStatsActivity extends Activity {
                 });
             }
             dialogBuilder.create().show();
+        }
+    }
+
+    static class ScenarioExpandableListAdapter extends BaseExpandableListAdapter {
+
+        private final Scenarios scenarios;
+        private final LayoutInflater inflater;
+
+        public ScenarioExpandableListAdapter(LayoutInflater inflater, Scenarios scenarios) {
+            this.inflater = inflater;
+            this.scenarios = scenarios;
+        }
+
+        @Override
+        public int getGroupCount() {
+            return scenarios.getCategories().length;
+        }
+
+        @Override
+        public int getChildrenCount(int groupPosition) {
+            return scenarios.getScenariosForCategoryIdx(groupPosition).length;
+        }
+
+        @Override
+        public Object getGroup(int groupPosition) {
+            return scenarios.getCategories()[groupPosition];
+        }
+
+        @Override
+        public Object getChild(int groupPosition, int childPosition) {
+            return scenarios.getScenariosForCategoryIdx(groupPosition)[childPosition];
+        }
+
+        @Override
+        public long getGroupId(int groupPosition) {
+            return groupPosition + 1 << 32;
+        }
+
+        @Override
+        public long getChildId(int groupPosition, int childPosition) {
+            return groupPosition << 16 | childPosition; // Allows for 16k groups and children
+        }
+
+        @Override
+        public boolean hasStableIds() {
+            return false;
+        }
+
+        @Override
+        public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
+            View itemView = null;
+            TextView labelView = null;
+            View progressView;
+            if ((itemView = convertView) == null ||
+                    (labelView = (TextView) convertView.findViewById(R.id.scenarioLabel)) == null ||
+                    (progressView = itemView.findViewById(R.id.scenarioProgress)) == null) {
+                itemView = inflater.inflate(R.layout.scenario_list_item, parent, false);
+                labelView = (TextView) itemView.findViewById(R.id.scenarioLabel);
+                progressView = itemView.findViewById(R.id.scenarioProgress);
+            }
+            labelView.setText(scenarios.getCategories()[groupPosition]);
+            labelView.setTypeface(null, Typeface.BOLD);
+            progressView.setVisibility(View.INVISIBLE);
+            return itemView;
+        }
+
+        @Override
+        public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
+            View itemView = null;
+            TextView labelView = null;
+            ProgressBar progressView = null;
+            if ((itemView = convertView) == null ||
+                    (labelView = (TextView) convertView.findViewById(R.id.scenarioLabel)) == null ||
+                    (progressView = (ProgressBar) itemView.findViewById(R.id.scenarioProgress)) == null) {
+                itemView = inflater.inflate(R.layout.scenario_list_item, parent, false);
+                labelView = (TextView) itemView.findViewById(R.id.scenarioLabel);
+                progressView = (ProgressBar) itemView.findViewById(R.id.scenarioProgress);
+            }
+            labelView.setText(scenarios.getScenariosForCategoryIdx(groupPosition)[childPosition]);
+            int progress = scenarios.getProgress(groupPosition,
+                    scenarios.getScenariosForCategoryIdx(groupPosition)[childPosition]);
+            if (progress == 0) {
+                progressView.setVisibility(View.INVISIBLE);
+            } else {
+                progressView.setVisibility(View.VISIBLE);
+                progressView.setProgress(progress);
+            }
+            return itemView;
+        }
+
+        @Override
+        public boolean isChildSelectable(int groupPosition, int childPosition) {
+            return false;
         }
     }
 }

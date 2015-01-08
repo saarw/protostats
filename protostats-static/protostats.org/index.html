@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" ng-app="">
 <head>
 	<title>ProtoStats.org - Crowd-sourced mobile connectivity analytics.</title>
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
-	<script src="https://code.jquery.com/ui/1.11.2/jquery-ui.min.js"></script>
+	<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
 </head>
-<body>
+<body ng-controller="pageController">
 <nav class="navbar navbar-default">
   <div class="container-fluid">
     <!-- Brand and toggle get grouped for better mobile display -->
@@ -24,26 +25,36 @@
 
 	<div class="collapse navbar-collapse" id="main-menu-collapse">
       <ul class="nav navbar-nav">
-        <li class="active"><a href="#">Start</a></li>
-        <li><a href="#">Stats</a></li>
-		<li><a href="#">About</a></li>
+        <li ng-class="activeView == 'startView' ? 'active' :''" id="startView"><a href="#" ng-click="activeView = 'startView'">Start</a></li>
+        <li ng-class="activeView == 'statsView' ? 'active' :''"><a href="#" id="statsView" ng-click="setActiveView('statsView')">Stats</a></li>
+		<li ng-class="activeView == 'aboutView' ? 'active' :''"><a href="#" id="aboutView" ng-click="activeView = 'aboutView'">About</a></li>
 	  </ul>
 	</div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
-<div id="startTab">
-	<p>Helping app developers pick the right protocol by crowd-sourcing connectivity analytics from the world's mobile operators.</p>
+<div ng-hide="activeView != 'startView'">
+	<p>Crowd-sourcing connectivity analytics from the world's mobile operators.</p>
 
-	<p>Download the Android app now to test your phone's and operator's connectivity. Completing the tests gives you access to the aggregated results!</p>
+	<p>Contribute by downloading the Android app to test your phone's and operator's connectivity.</p>
 </div>
 
-<div id="statsTab">
+<div ng-hide="activeView != 'statsView'">
+	<p>Statistics</p>
 </div>
 
-<div id="aboutTab">
-	<p>ProtoStats was created as personal holiday hacking project by Swedish software engineer William Saar to help answer questions about mobile app development and play with new technologies.</p>
+<div ng-hide="activeView != 'aboutView'">
+	<p>ProtoStats was created as holiday hacking project by William Saar to help answer questions about mobile app connectivity.</p>
 	<p>The client is written in Android Java, the backend in Go, and this website uses AngularJS.</p>
 	<p>Follow William on Twitter.</p>
 </div>
+
+<script type="text/javascript">
+function pageController($scope) {
+$scope.activeView = "startView";
+$scope.setActiveView = function(newView) {	
+	$scope.activeView = newView;
+}
+}
+</script>
 </body>
 </html>

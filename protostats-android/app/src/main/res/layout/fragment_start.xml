@@ -12,7 +12,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ProtoStats tests different connection scenarios on your mobile network (bandwidth costs may apply!) and uploads the results to a central database. Completing the test gives you access to the aggregated results."
+        android:text="ProtoStats tests different connection scenarios on your mobile network and uploads the results to a central database for aggregation."
         android:id="@+id/descriptionTextView"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
@@ -21,8 +21,8 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Run Tests"
-        android:id="@+id/runTestButton"
+        android:text="Run Scenarios"
+        android:id="@+id/runScenariosButton"
         android:layout_below="@+id/descriptionTextView"
         android:layout_alignParentLeft="true"
         android:focusable="false"
@@ -32,11 +32,19 @@
     <ExpandableListView
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
-        android:id="@+id/testScenarioListView"
+        android:id="@+id/scenarioListView"
         android:footerDividersEnabled="false"
-        android:layout_below="@+id/runTestButton"
+        android:layout_below="@+id/runScenariosButton"
         android:clickable="true">
     </ExpandableListView>
+
+    <ProgressBar
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/totalRunProgressBar"
+        android:layout_below="@+id/descriptionTextView"
+        android:layout_toRightOf="@+id/runScenariosButton"
+        android:visibility="invisible" />
 
 </RelativeLayout>
 

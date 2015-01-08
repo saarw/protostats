@@ -55,10 +55,16 @@ public class Scenarios {
     static class JsonRpcScenario extends RunnableScenario {
 
         public JsonRpcScenario() {
-            super(ScenarioID.HTTP_POST_JSON_RPC, new JsonRpcScenarioLogic());
+            super(ScenarioID.HTTP_POST_JSON_RPC, new JsonRpcScenarioLogic(ScenarioID.HTTP_POST_JSON_RPC));
         }
 
         static class JsonRpcScenarioLogic implements ScenarioLogic {
+            private ScenarioID scenarioId;
+
+            public JsonRpcScenarioLogic(ScenarioID scenarioId) {
+                this.scenarioId = scenarioId;
+            }
+
             @Override
             public void run(String token, ScenarioRunner context, RecoverySystem.ProgressListener progressListener) throws Exception {
                 int reqs = 5;
@@ -66,9 +72,16 @@ public class Scenarios {
                     if (i > 0) {
                         Thread.sleep(5000);
                     }
-                    String result = context.sendPost("http://10.0.2.2:8080/rpc", "RpcScenarioCall", token);
-                    if (result == null || result.length() < 10 || !result.endsWith("end an end")) {
-                        throw new Exception("Returned unexpected result: " + result);
+                    long nanoTime = System.nanoTime();
+                    try {
+                        String result = context.sendRpcPost("http://10.0.2.2:8080/rpc", "RpcScenarioCall", token);
+                        if (result == null || result.length() < 10 || !result.endsWith("end an end")) {
+                            throw new Exception("Returned unexpected result: " + result);
+                        }
+                        float timing = ((float) (System.nanoTime() - nanoTime)) / 1000000f;
+                        context.trackScenarioTiming(token, scenarioId, i, timing);
+                    } catch(Exception e) {
+                        context.trackScenarioException(token, scenarioId, i, e);
                     }
                     progressListener.onProgress((i + 1) * (100 / reqs));
                 }

@@ -50,13 +50,16 @@ func (rpc *JsonRpcEndpoint) Handler(out http.ResponseWriter, in *http.Request) {
 							}
 						}()
 						returnValue := method.Call(args)
-						rpcRsp := RpcResponse{Id:rpcReq.Id}
-						rpcRsp.Result = returnValue[0].Interface()
+						rpcRsp := RpcResponse{Id: rpcReq.Id}
+						if len(returnValue) == 0 {
+							rpcRsp.Result = nil
+						} else {
+							rpcRsp.Result = returnValue[0].Interface()
+						}
 						rpcRsp.Error = nil
 						returnJson, err := json.Marshal(rpcRsp)
 						if err == nil {
 							out.WriteHeader(http.StatusOK)
-					
 							out.Write(returnJson)
 							return
 						}

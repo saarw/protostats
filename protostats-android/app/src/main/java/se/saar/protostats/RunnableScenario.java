@@ -31,6 +31,10 @@ public class RunnableScenario {
         return runProgress.get();
     }
 
+    public ScenarioID getScenarioId() {
+        return id;
+    }
+
     interface ScenarioLogic {
         public void run(String token, ScenarioRunner context, RecoverySystem.ProgressListener progressListener) throws Exception;
     }
