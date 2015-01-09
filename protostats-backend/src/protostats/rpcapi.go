@@ -36,6 +36,7 @@ func (r *RpcApi) InitTests(networkAndPhoneData string) string {
 	token := strconv.Itoa(r.tokenCount)
 	r.tokenCount = r.tokenCount + 1
 	log.Printf("InitTests called with data %s, return token %s", networkAndPhoneData, token)
+	r.logChannel <- fmt.Sprintf("init\t%v\t%v\t%v\t%v", token, -1, -1, networkAndPhoneData)
 	return token
 }
 

@@ -12,6 +12,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -46,10 +47,20 @@ public class ScenarioRunner {
 
     public void runScenarios(final TelephonyManager telephonyManager, final NetworkInfo networkInfo) {
         isFinished.set(false);
-        initRun(telephonyManager.getNetworkOperatorName());
+        String deviceData;
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("android.os.Build.MODEL", android.os.Build.MODEL);
+            obj.put("networkOperatorName", telephonyManager.getNetworkOperatorName());
+            obj.put("networkCountryIso", telephonyManager.getNetworkCountryIso());
+            deviceData = obj.toString();
+        } catch (JSONException e) {
+            deviceData = "Error encoding data " + e.getMessage();
+        }
+        initRun(deviceData);
     }
 
-    private AsyncTask<Runnable, Integer, Exception> initRun(final String operatorName) {
+    private AsyncTask<Runnable, Integer, Exception> initRun(final String phoneData) {
         isFinished.set(false);
         AsyncTask<Runnable, Integer, Exception> task = new AsyncTask<Runnable, Integer, Exception>() {
             @Override
@@ -65,7 +76,7 @@ public class ScenarioRunner {
                                 excludedScenarioIds.add(Integer.valueOf(id));
                             }
                         }
-                        token = sendRpcPost(initEndpointUrl, "InitTests", operatorName);
+                        token = sendRpcPost(initEndpointUrl, "InitTests", phoneData);
                     } catch (Exception e) {
                         e.printStackTrace();
                         return e;

@@ -12,6 +12,7 @@ import (
 
 type RpcResponse struct {
 	Id     int         `json:"id"`
+	Version string		`json:"jsonrpc"`
 	Result interface{} `json:"result"`
 	Error  *string     `json:"error"` // Pointer to allow marshalling to null
 }
@@ -50,7 +51,7 @@ func (rpc *JsonRpcEndpoint) Handler(out http.ResponseWriter, in *http.Request) {
 							}
 						}()
 						returnValue := method.Call(args)
-						rpcRsp := RpcResponse{Id: rpcReq.Id}
+						rpcRsp := RpcResponse{Id: rpcReq.Id, Version: "2.0"}
 						if len(returnValue) == 0 {
 							rpcRsp.Result = nil
 						} else {

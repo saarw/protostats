@@ -8,6 +8,7 @@
 	<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+	<script src="js/jquery.jsonrpc.js"></script>
 </head>
 <body ng-controller="pageController">
 <nav class="navbar navbar-default">
@@ -26,7 +27,7 @@
 	<div class="collapse navbar-collapse" id="main-menu-collapse">
       <ul class="nav navbar-nav">
         <li ng-class="activeView == 'startView' ? 'active' :''" id="startView"><a href="#" ng-click="activeView = 'startView'">Start</a></li>
-        <li ng-class="activeView == 'statsView' ? 'active' :''"><a href="#" id="statsView" ng-click="setActiveView('statsView')">Stats</a></li>
+        <li ng-class="activeView == 'statsView' ? 'active' :''"><a href="#" id="statsView" ng-click="setActiveView('statsView')">Analytics</a></li>
 		<li ng-class="activeView == 'aboutView' ? 'active' :''"><a href="#" id="aboutView" ng-click="activeView = 'aboutView'">About</a></li>
 	  </ul>
 	</div><!-- /.navbar-collapse -->
@@ -35,11 +36,13 @@
 <div ng-hide="activeView != 'startView'">
 	<p>Crowd-sourcing connectivity analytics from the world's mobile operators.</p>
 
-	<p>Contribute by downloading the Android app to test your phone's and operator's connectivity.</p>
+	<p>Contribute data from your country and mobile operator by downloading the Android app to test your phone's and operator's connectivity.</p>
 </div>
 
 <div ng-hide="activeView != 'statsView'">
-	<p>Statistics</p>
+	<p>Analytics view that eventually report aggregated connectivity info like - "Websocket subscribe-receive works in 43% of Egypt".</p>
+	<p>Right now it only displays the raw event data from the latest runs.</p>
+	<pre>{{ eventData }} </pre>
 </div>
 
 <div ng-hide="activeView != 'aboutView'">
@@ -49,11 +52,30 @@
 </div>
 
 <script type="text/javascript">
+$.jsonRPC.setup({
+  endPoint: '/rpc',
+  namespace: ''
+});
+
 function pageController($scope) {
 $scope.activeView = "startView";
+$scope.eventData = "Loading...";
 $scope.setActiveView = function(newView) {	
 	$scope.activeView = newView;
-}
+	if ($scope.activeView == 'statsView') {
+		$.jsonRPC.request('GetLatestEvents', {
+			params: [],
+			success: function(result) {			
+				$scope.eventData = "Event\tToken\tTestID\tStep\tResult\n" + result.result;
+				$scope.$digest();
+			},
+			error: function(result) {				
+				$scope.eventData = 'Error:' + result.error;
+				$scope.$digest();
+			}
+		});
+	}
+};
 }
 </script>
 </body>
